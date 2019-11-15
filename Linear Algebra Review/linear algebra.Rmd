@@ -1,0 +1,497 @@
+---
+title: "Linear Algebra Review"
+subtitle: "BDSI 2019"
+author: "Holly Hartman"
+date: "6/20/2019"
+output:
+  beamer_presentation:
+    theme: "Madrid"
+    fonttheme: "structurebold"
+    includes:
+      in_header: header.txt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+require(knitr)
+# Set so that long lines in R will be wrapped:
+opts_chunk$set(tidy.opts=list(width.cutoff=50),tidy=TRUE)
+```
+
+## Scalars and Vectors
+
+Scalars - Single number, represents magnitude
+
+$$ x = [a] = a ; a \in \mathbb{R}$$ 
+
+Vectors - Sequence of numbers, represents direction and magnitude
+
+$$ y = [a, b , \cdots] =  <a, b , \cdots >; a, b, \cdots \in \mathbb{R}$$ 
+
+Vectors can be notated $y, \pmb{y}, \overrightarrow{y}$. 
+
+## Matrices
+
+$$ \pmb{A} = \begin{bmatrix} 3 & 2 & 4 \\
+6 & 2 & 1 
+\end{bmatrix} $$
+
+$\pmb{A}$ is a $2 \times 3$ matrix (2 rows, 3 columns)
+
+$$ B = \begin{bmatrix} 2 &  6& 6 \\
+4 & 5 & 3 \\
+9 & 6 & 2 
+\end{bmatrix} $$
+
+$\pmb{B}$ is a $3 \times 3$ matrix (3 rows, 3 columns)
+
+Entries identified by subscripts. $\pmb{B}_{2,3}=3$ and $\pmb{A}_{1,2} = 2$,
+
+## Matrices in R
+
+```{r, echo = TRUE}
+A = matrix(c(3, 2, 4, 6, 2, 1), nrow = 2, byrow = T)
+dim(A)
+A[1,2]
+```
+
+## Matrix notation
+
+While vectors are typically lower case, matrices are typically upper case. Matrices can be written many ways to indicate that they are a matrix.
+
+$$X$$ 
+$$\pmb{X}$$ $$\textbf{X}$$ $$\boldsymbol{X}$$ $$\mathbb{X}$$
+
+I will use $\pmb{X}$ to distinguish between scalars and matrices. 
+
+
+## Types of Square Matrices
+
+Square - same number of rows as columns 
+
+$$\begin{bmatrix} 2 &  6& 6 \\
+4 & 5 & 3 \\
+9 & 6 & 2 
+\end{bmatrix} $$
+
+Diagonal - Only non-zero values on the diagonal
+
+$$\begin{bmatrix} 2 & 0 & 0 \\
+0 & 5 & 0 \\
+0 & 0 & 3 
+\end{bmatrix} $$
+
+## Types of Square Matrices
+
+Symmetric - If matrix is $\pmb{B}$, entry $\pmb{B}_{ij}=\pmb{B}_{ji}$
+
+$$\begin{bmatrix} 2 &  4& 9 \\
+4 & 5 & 6 \\
+9 & 6 & 3 
+\end{bmatrix} $$
+
+Identity - Diagonal matrix where all entries are 1. Notation: $\pmb{I}_n$
+
+$$\pmb{I}_3 \equiv \begin{bmatrix} 1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1 
+\end{bmatrix} $$
+
+Let $\pmb{B}$ be $r \times c$, then $I_r \pmb{B} = \pmb{B}$ and $\pmb{B} I_c = \pmb{B}$.
+
+## Types of Square Matrices
+
+Upper triangular matrix - $\pmb{B}_{ij} = 0$ if $i > j$
+
+$$\begin{bmatrix} 2 &  4& 9 \\
+0 & 5 & 6 \\
+0 & 0 & 3 
+\end{bmatrix} $$
+
+Lower triangular matrix - $\pmb{B}_{ij} = 0$ if $i < j$
+
+$$\begin{bmatrix} 2 &  0& 0 \\
+4 & 5 & 0 \\
+9 & 6 & 3 
+\end{bmatrix} $$
+
+## Matrix algebra
+
+Addition - matrices need same dimensions
+
+$$ \pmb{A} + \pmb{A} =
+\begin{bmatrix} 3 & 2 & 4 \\
+6 & 2 & 1 
+\end{bmatrix} + \begin{bmatrix} 3 & 2 & 4 \\
+6 & 2 & 1 
+\end{bmatrix}
+= \begin{bmatrix}6 & 4 & 8 \\
+12 & 4 & 2
+\end{bmatrix}
+$$
+
+Multiplication - If $\pmb{A}$ is $a \times n$ then $\pmb{B}$ must be $n \times b$. Final matrix will be $a \times b$.
+
+$$ \pmb{A}\pmb{B} =
+\begin{bmatrix} 3 & 2 & 4 \\
+6 & 2 & 1 
+\end{bmatrix} \begin{bmatrix} 2 &  6& 6 \\
+4 & 5 & 3 \\
+9 & 6 & 2 
+\end{bmatrix} = $$ 
+$$ 
+\begin{bmatrix} 3 \times 2 + 2 \times 4 + 4 \times 9 &  3 \times 6 + 2 \times 5 + 4 \times 6 & 3 \times 6 + 2 \times 3 + 4 \times 2 \\
+6 \times 2 + 2 \times 4 + 1 \times 9 &  6 \times 6 + 2 \times 5 + 1 \times 6 & 6 \times 6 + 3 \times 3 + 1 \times 2
+\end{bmatrix}
+$$
+
+## Matrix algebra in R
+
+```{r, echo = TRUE}
+A = matrix(c(3, 2, 4, 6, 2, 1), nrow = 2, byrow = T)
+A + A
+
+B = matrix(c(2, 6, 6, 4, 5, 13, 9, 6, 2), nrow = 3, byrow = T)
+A %*% B
+```
+
+## Bad matrix algebra in R
+
+```{r, echo = TRUE, error = T}
+A*B
+```
+
+## Bad matrix algebra in R
+
+```{r, echo = TRUE}
+(A.bad = matrix(c(3, 2, 4, 6, 2, 1, 2,3,4), nrow = 3, byrow = T))
+(B.bad = matrix(c(2, 6, 6, 4, 5, 13, 9, 6, 2), nrow = 3, byrow = T))
+```
+
+## Bad matrix algebra in R
+
+```{r, echo = TRUE}
+A.bad * B.bad
+
+(A.bad * B.bad) == (A.bad %*% B.bad)
+
+```
+
+
+## Transpose
+
+Transpose - columns become rows and rows become columns. Notation varies. Can be either $\pmb{A}^T$ or $\pmb{A}'$. An $n \times p$ matrix becomes $p \times n$
+
+$$ \pmb{A} = \begin{bmatrix} 3 & 2 & 4 \\
+6 & 2 & 1 
+\end{bmatrix} $$
+
+$$\pmb{A}' = \begin{bmatrix} 3 & 6 \\
+2 & 2 \\
+4 &1 \end{bmatrix}
+$$
+
+## Transpose in R
+
+```{r, echo = TRUE}
+A
+t(A)
+```
+
+## Rules of operations - Commutative Laws
+$\pmb{A} + \pmb{B} = \pmb{B} + \pmb{A}$
+
+$a \pmb{B} = \pmb{B} a$
+
+Note: $\pmb{A}\pmb{B} \neq \pmb{B}\pmb{A}$ except in special cases.
+
+Let $\pmb{A}$ be a square matrix:
+$\pmb{A} \pmb{I}_n = \pmb{I}_n \pmb{A} = \pmb{A}$
+
+## Rules of operations - Distributive laws
+
+$\pmb{A}(\pmb{B}+\pmb{C}) = \pmb{A}\pmb{B} + \pmb{A}\pmb{C}$
+
+$(\pmb{B} + \pmb{C})\pmb{A} = \pmb{B}\pmb{A} + \pmb{C}\pmb{A}$
+
+$a(\pmb{B} + \pmb{C}) = a\pmb{B} + a\pmb{C} = (\pmb{B} + \pmb{C})a$
+
+## Rules of operations - Associative Laws
+
+$(\pmb{A} + \pmb{B}) + \pmb{C} = \pmb{A} + (\pmb{B} + \pmb{C})$
+
+$(\pmb{A}\pmb{B})\pmb{C} = \pmb{A}(\pmb{B}\pmb{C})$
+
+## Rules of operations - Transpose Laws
+
+$(\pmb{A} + \pmb{B})' = \pmb{A}' + \pmb{B}'$
+
+$(\pmb{A}\pmb{B})' = \pmb{B}'\pmb{A}'$
+
+$(a\pmb{B})' = a\pmb{B}' = \pmb{B}'a$
+
+If $\pmb{A}$ is symmetric $\pmb{A}^T = \pmb{A}$.
+
+## Matrices in R
+```{r, echo = TRUE}
+t(A %*% B)
+
+t(B) %*% t(A)
+
+```
+
+## Matrices in R
+```{r, echo = TRUE}
+
+t(A %*% B) == t(B) %*% t(A)
+
+```
+
+
+## Determinants 
+
+Determinant - scalar that can be computed from a matrix  
+$$\pmb{A} = \begin{bmatrix}
+a & b \\
+c & d 
+\end{bmatrix}
+$$
+$det(\pmb{A}) = |\pmb{A}| = ad - bc$
+
+```{r, echo=T}
+(A = matrix(c(3, 2, 4, 6), nrow = 2, byrow = T))
+det(A)
+```
+
+## Determinants
+
+```{r, echo=T}
+(A = matrix(c(3, 2, 4, 6, 4, 6, 9, 3, 5), nrow = 3, byrow = T))
+det(A)
+```
+
+## Matrix Inverse
+The inverse of a matrix, $\pmb{A}^{-1}$ is such that $\pmb{A}\pmb{A}^{-1} = \pmb{A}^{-1}\pmb{A} =I$.
+$$\pmb{A} = \begin{bmatrix}
+a & b \\
+c & d 
+\end{bmatrix}
+$$
+$$\pmb{A}^{-1} = \begin{bmatrix}
+a & b \\
+c & d 
+\end{bmatrix} = \frac{1}{det(\pmb{A})} \begin{bmatrix}
+d & -b \\
+-c & a 
+\end{bmatrix}
+$$
+
+## Inverse matrices in R
+```{r, echo=T}
+(A = matrix(c(3, 2, 4, 6), nrow = 2, byrow = T))
+solve(A)
+```
+
+
+## Inverse matrices in R
+```{r, echo=T}
+B = matrix(c(2, 6, 6, 4, 5, 13, 9, 6, 2), nrow = 3, byrow = T)
+
+det(B)
+
+solve(B)
+```
+
+## Most square matrices are invertible
+```{r, echo = T}
+count1 <- 0 #To count number of errors
+for(i in 1:1000) { #loop 1000 times
+  n<-sample(100,1) #How big the matrix is
+  A<-matrix(runif(n^2, min = -100, max = 100),nrow=n) #Randomly generate a matrix
+  temp<-try(solve(A), silent = T) #Catch any error that occurs while inverting 
+  if(inherits(temp,"try-error")){ #If an error occured
+    count1 <- count1 + 1 #add to count1
+  }
+}
+count1
+```
+
+## What does a non-invertible matrix look like?
+
+- Not square
+```{r, echo = T, error = T}
+A<-matrix(runif(6, min = -100, max = 100),nrow=3)
+solve(A)
+```
+
+- Determinant = 0
+
+```{r, echo = T, error = T}
+A<-matrix(runif(6, min = -100, max = 100),nrow=3)
+A<-cbind(A[,1]*2, A)
+round(det(A), digits = 10)
+solve(A)
+```
+
+## Matrix algebra with inverses
+
+$(\pmb{A}\pmb{B})^{-1} = \pmb{B}^{-1}\pmb{A}^{-1}$
+
+$(\pmb{A}\pmb{B}\pmb{C}\pmb{D}...)^{-1} = \pmb{B}^{-1}\pmb{A}^{-1}\pmb{C}^{-1}\pmb{D}^{-1}...$
+
+$\left(\pmb{A}^{-1}\right)^T = (\pmb{A}^T)^{-1}$
+
+
+## Matrices in Statistics 
+
+Linear regression formula is written:
+
+$$y_i = \beta_0 + \beta_1 x_{i1} +\cdots \beta_p x_{ip} + e_{i}$$
+
+There are $n$ $y_i$ measurements, $p$ $\beta$s, and $n$ $\epsilon$s
+
+## Matrices in Statistics
+
+This can be written much more concisely with matrix notation:
+
+$$\pmb{Y} = \begin{bmatrix}
+y_1\\
+y_2\\
+\vdots \\
+y_n \end{bmatrix} \pmb{X} = \begin{bmatrix}
+1 & x_{11} & x_{12} & \cdots & x_{1p} \\
+1 & x_{21} & x_{22} & \cdots & x_{2p} \\
+\vdots \\
+1 & x_{n1} & x_{n2} & \cdots & x_{np} \end{bmatrix} \pmb{\beta} = \begin{bmatrix}
+\beta_0\\
+\beta_1\\
+\vdots \\
+\beta_p \end{bmatrix} \pmb{\epsilon} = \begin{bmatrix}
+\epsilon_1\\
+\epsilon_2\\
+\vdots \\
+\epsilon_n \end{bmatrix}$$
+
+$$\pmb{Y} = \pmb{X\beta} + \pmb{\epsilon}$$
+
+
+## Least squares regression
+ 
+Recall that the least squares estimate of $\pmb{\beta}$ is: 
+$$ \hat{\pmb{\beta}} = \left( \pmb{X}^T \pmb{X}\right)^{-1}\pmb{X}^T\pmb{Y} $$
+
+(If this is unfamiliar, review the Linear Regression slides from Emily)
+
+## Let's see this in action in R
+
+We will use a data set on fertility and socioeconomic indicators for provinces of Switzerland around 1888. 
+
+```{r, echo=T}
+library(datasets)
+names(swiss)
+```
+
+## Explore data set
+
+```{r, echo=T}
+?swiss
+```
+
+[,1]	Fertility	Ig, ‘common standardized fertility measure’
+
+[,2]	Agriculture	% of males involved in agriculture as occupation
+
+[,3]	Examination	% draftees receiving highest mark on army examination
+
+[,4]	Education	% education beyond primary school for draftees.
+
+[,5]	Catholic	% ‘catholic’ (as opposed to ‘protestant’).
+
+[,6]	Infant.Mortality	live births who live less than 1 year.
+
+## 
+
+```{r, echo=T}
+summary(swiss)
+```
+
+
+## Linear Regression with Swiss data set
+```{r, echo=T}
+linRegModel <- lm(Fertility ~ ., data =swiss)
+summary(linRegModel)
+```
+
+## Estimate regression parameters using matrix notation
+```{r, echo=T}
+
+X = cbind(1, as.matrix(swiss[,2:6]))
+Y = as.matrix(swiss[,1])
+
+(beta = solve(t(X) %*% X) %*% t(X) %*% Y)
+
+```
+
+## Compare Estimates
+```{r, echo=T}
+
+cbind(beta, linRegModel$coef)
+
+```
+## Linear dependence
+
+Let $\pmb{x}_1, \cdots, \pmb{x}_p$ be $n \times 1$ vectors. Then they are linearly dependent if there exits a set of scalars $a_1, \cdots a_p$ that are not all zero such that:
+
+$$ \sum_{i=1}^p a_i \pmb{x}_i = \pmb{0}$$
+
+If no set of $a_i$s exists, then the set of $\pmb{x_i}$s are linearly independent
+
+## Rank
+
+The rank of a set of vectors is the number of linearly independent vectors there are in the set. Rank ranges from 0 to $p$ where $p$ would be "full rank."
+
+For a matrix, rank is from the matrix columns. Let $\pmb{A}$ be a $n \times p$ matrix. 
+
+Full rank: $rank(\pmb{A}) = \min(n, p)$
+$rank(\pmb{A}) \le \min(n, p)$
+
+Full rank square matrix is also called singular. 
+
+## Why is rank important in statistics?
+
+Many tests rely on the assumption that the covariates are independent.
+
+This is the same as the assumption that the covariate matrix, $\pmb{X}$, is full rank.
+
+## Rank in R
+
+```{r, echo = T}
+dim(X)
+qr(X)$rank
+```
+
+## Rank in R
+
+```{r, echo = T}
+X<-cbind(X[,1]*2, X)
+dim(X)
+qr(X)$rank
+```
+
+## Rank and invertible matrices
+
+Square matrices that are less than full rank are not invertible. 
+
+\begin{align*}
+rank(\pmb{A}) < n & \Leftrightarrow \pmb{A} \text{ is singular} \\
+& \Leftrightarrow  det(\pmb{A}) = 0  \\
+& \Leftrightarrow \pmb{A}^{-1} \text{ does not exist}
+\end{align*}
+
+## Revisit non-invertible matrix example
+```{r, echo = T, error = T}
+A<-matrix(runif(6, min = -100, max = 100),nrow=3)
+(A<-cbind(A[,1]*2, A)) #Make A not full rank
+round(det(A), digits = 8)
+solve(A)
+```

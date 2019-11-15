@@ -1,0 +1,432 @@
+---
+title: "Correlated Data Models"
+subtitle: "BDSI 2019"
+author: "Holly Hartman"
+date: "6/26/2019"
+output:
+  beamer_presentation:
+    theme: "Madrid"
+    fonttheme: "structurebold"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+require(knitr)
+# Set so that long lines in R will be wrapped:
+opts_chunk$set(tidy.opts=list(width.cutoff=40),tidy=TRUE)
+knitr::opts_chunk$set(dev = 'pdf')
+```
+
+## Outline/Learning objectives
+
+- Why do we need to account for correlation? 
+- Simulation study
+- What does correlation look like?
+- Mixed effect models
+- Real data example of mixed effect model
+
+
+##  Review
+
+What are the assumptions for a linear regression model?
+
+\pause
+
+-  Independence between observations
+-  Linearity between covariates and outcome
+-  Constant variance of errors
+-  Normally distributed errors
+
+##  What is correlated data?
+
+Correlated data arises when the assumption of independence is violated.
+
+
+##  Example 1: 
+
+A researcher is conducting a study on a new treatment for hypertension. Clinics are randomly assigned to either prescribe the standard of care treatment or the new treatment. New patients seen at the clinics have their baseline blood pressure measured and then have their blood pressure measured again at 3 follow up appointments at set times. What are potential sources of correlation within the resulting data set for this study? 
+
+##  Example 2:
+
+A researcher is interested in if there is a subtype of cancer more susceptible to a specific type of treatment. The cancer is genetically inheritable. Patients are recruited through a hospital and any family members with the cancer are also recruited. Samples of the tumors are genotyped. People in the study are randomly assigned to receive the new treatment or standard of care and their tumor response is measured. What are potential sources of correlation within the resulting data set for this study?
+
+#  What happens if you ignore correlation in data sets? A simulation example
+
+##  Simulating a data set - load libraries
+```{r, echo = TRUE, message=FALSE, warning=F}
+library(MASS) #Required to generate multivariate normal data
+library(tidyr) #Required for formatting data **
+library(lme4) #Required for mixed models **
+library(ggplot2) #Required for the pretty plots **
+library(PerformanceAnalytics) #For cool correlation plot **
+```
+
+```{r, message=FALSE, warning=F}
+library(cowplot)
+```
+
+** indicates we will use this library for the real data example later too
+
+##  Simulating a data set - set parameters
+```{r, echo = TRUE}
+set.seed(7789) #Seed to ensure identical results of
+  #simulation.
+
+  #P.S. 7/7/89 is my birthday
+
+#covariance matrix
+(covMatrix<-matrix(c(1, .8, .5,
+                  .8, 1, .8,
+                  .5, .8, 1), byrow=T, nrow=3))
+
+contMean<-c(0,1, 2) #means for the control group
+
+trtMean<- contMean + 1 #treatment group means
+```
+
+
+## Simulating a data set - Generate data
+```{r, echo = TRUE}
+#Control group data
+cont<-cbind(seq(101,200), 0,mvrnorm(n=100, mu = contMean, Sigma = covMatrix))
+
+#treatment group data
+trt<-cbind(seq(1,100), 1,mvrnorm(n=100, mu = trtMean, Sigma = covMatrix))
+
+#Combine trt and control data
+trialDataWide<-data.frame(rbind(cont, trt))
+names(trialDataWide)<-c("ID","trt","0","1","2") #name columns
+```
+
+## Simulating a data set - View data
+```{r, echo = TRUE}
+head(trialDataWide)
+```
+
+
+## Simulating a data set - Cleaning data
+```{r, echo = TRUE}
+#Make data in long format from wide format
+trialData <- gather(trialDataWide, time, measurement, "0":"2", factor_key=F)
+
+#Change data type of "time"
+trialData$time<-as.numeric(trialData$time)
+
+head(trialData)
+```
+
+
+##  Results!
+```{r, echo = TRUE}
+#Model not accounting for correlation
+summary(lm(measurement~ trt + time , data=trialData))$coefficients
+
+#Model accounting for correlation
+summary(lmer(measurement~ trt + time  + (1 | ID), data=trialData))$coefficients
+```
+
+## What happened?
+
+**Between subject** (trt) - If we assume all observations are independent, this artificially inflates the number of observations. This decreases the standard error estimates. 
+
+**Within subject** (time) - Subjects have a higher correlation with themselves than with other subjects and this causes lower variability in reality. If we assume all observations are independent, then this overestimates variability. 
+
+
+## What does correlation look like?
+```{r}
+library(cowplot) #Layout of the pretty plots
+theme_set(theme_bw())
+
+makeTestDat<-function(meanChange, covMatrix){
+ highCorr<-data.frame(cbind(seq(1,20) ,mvrnorm(n=20, mu = meanChange, Sigma = covMatrix)))
+names(highCorr)<-c("ID","0","1","2") #name columns
+highCorr <- gather(highCorr, time, measurement, "0":"2", factor_key=F)
+highCorr$time<-as.numeric(highCorr$time) 
+return(highCorr)
+}
+
+covMatrix<-matrix(c(1, .9, .9,
+                  .9, 1, .9,
+                  .9, .9, 1), byrow=T, nrow=3)
+meanChange<- c(0, 0, 0)
+
+highCorr<-makeTestDat(meanChange,covMatrix)
+
+highCorrP<-ggplot(data = highCorr, aes(x = time, y= measurement, group = ID)) + geom_line() + geom_point() + ggtitle("High Corr, No Mean Change")
+
+covMatrix<-matrix(c(1, 0.05, 0.05,
+                  0.05, 1, 0.05,
+                  0.05, 0.05, 1), byrow=T, nrow=3)
+lowCorr<-makeTestDat(meanChange,covMatrix)
+lowCorrP<-ggplot(data = lowCorr, aes(x = time, y= measurement, group = ID)) + geom_line() + geom_point()+ ggtitle("Low Corr, No Mean Change")
+
+covMatrix<-matrix(c(1, .9, .9,
+                  .9, 1, .9,
+                  .9, .9, 1), byrow=T, nrow=3)
+meanChange<- c(0, 1, 2)
+
+highCorr<-makeTestDat(meanChange,covMatrix)
+
+highCorrPM<-ggplot(data = highCorr, aes(x = time, y= measurement, group = ID)) + geom_line() + geom_point()+ ggtitle("High Corr, Mean Change")
+
+covMatrix<-matrix(c(1, 0.05, 0.05,
+                  0.05, 1, 0.05,
+                  0.05, 0.05, 1), byrow=T, nrow=3)
+lowCorr<-makeTestDat(meanChange,covMatrix)
+lowCorrPM<-ggplot(data = lowCorr, aes(x = time, y= measurement, group = ID)) + geom_line() + geom_point()+ ggtitle("Low Corr, Mean Change")
+
+
+plot_grid(highCorrP, lowCorrP, highCorrPM, lowCorrPM, ncol=2)
+```
+
+## Clustered Data
+
+-  Clustered data can arise from the study design
+-  Classic example: children in a classroom where the classrooms are randomized to treatment. Children within the same classroom are more related than children not in the same classroom because they have their teacher in common. 
+-  Do the individuals share something that may make them more similar? (ex: same doctor, same household)
+
+##  Longitudinal Data
+
+- The same patients are at multiple time points and have the outcome of interest measured multiple times
+- This is called "repeated measures."
+- Can also occur when multiple measurements are taken on the same person that are likely correlated.
+
+## Mixed effects models
+
+Traditional model:
+$$ \pmb{Y}_i= \pmb{X}_i\pmb{\beta}  +  \pmb{\epsilon}_i $$
+
+Mixed effects model:
+$$ \pmb{Y}_i= \pmb{X}_i\pmb{\beta} + \pmb{Z}_i\pmb{b}_i +  \pmb{\epsilon}_i $$
+
+- $i$ is the index for the individual. Since we have repeated measures, $\pmb{Y}_i$ has multiple elements since there are multiple outcomes observed for each individual. 
+- $\pmb{\beta}$ are fixed effects, the same for every person. 
+- $\pmb{b_i}$ are random effects, different for each person. We require $E(\pmb{b_i})=0$ so that the the estimated $\pmb{b_i}$ are interpreted as individual deviances from the population mean when $\pmb{Z}$ is a subset of $\pmb{X}$. 
+
+## Random effects
+
+$$ \pmb{Y}_i= \pmb{X}_i\pmb{\beta} + \pmb{Z}_i\pmb{b}_i +  \pmb{\epsilon}_i $$
+
+$\pmb{b}_i \sim MNV_q(\pmb{0},\pmb{G})$ and $\pmb{\epsilon}_i \sim MVN_{n_i}(\pmb{0}, \pmb{R}_i))$ with $\pmb{b}_i$ being independent of $\pmb{\epsilon}_i$. 
+
+
+## Random effects - Intercepts
+$$ y_{ij} = \beta_0 + \beta_1 Trt_i + \beta_2 Time_{ij} + b_{0i} + \epsilon_{ij}$$
+
+- $\beta_1$ and $\beta_2$ are fixed effects.
+- $b_{0i}$ is a random effect. 
+- $b_{0i} \sim N(0, \sigma_0^2)$
+- Each patient has their own intercept $\beta_0 + b_{0i}$.
+
+## Random effects - Slopes
+$$ y_{ij} = \beta_0 + \beta_1 Trt_i + \beta_2 Time_{ij} + b_{0i} + b_{1i} Time_{ij}+ \epsilon_{ij}$$
+
+- Each patient has their own intercept $\beta_0 + b_{0i}$.
+- Each patient has their own slope over time $\beta_1 + b_{1i}$.
+- $\pmb{b}_{i} \sim MVN(\pmb{0}, \pmb{G})$
+
+## Expected values in a random effects model
+$$ \pmb{Y}_i= \pmb{X}_i\pmb{\beta} + \pmb{Z}_i\pmb{b}_i +  \pmb{\epsilon}_i $$
+$\pmb{b}_i \sim MNV_q(\pmb{0},\pmb{G})$ and $\pmb{\epsilon}_i \sim MVN_{n_i}(\pmb{0}, \pmb{R}_i))$
+
+$$ E(\pmb{Y}_{i}| \pmb{b}_i) = \pmb{X}_i\pmb{\beta} + \pmb{Z}_i\pmb{b}_i $$
+
+$$ E(\pmb{Y}_{i}) = \pmb{X}_i\pmb{\beta}  $$
+
+## Covariance in a random effects model
+$$ \pmb{Y}_i= \pmb{X}_i\pmb{\beta} + \pmb{Z}_i\pmb{b}_i +  \pmb{\epsilon}_i $$
+$\pmb{b}_i \sim MNV_q(\pmb{0},\pmb{G})$ and $\pmb{\epsilon}_i \sim MVN_{n_i}(\pmb{0}, \pmb{R}_i))$
+
+$$ Cov(\pmb{Y}_{i}| \pmb{b}_i) = Cov(\pmb{\epsilon}_i) = \pmb{R}_i $$
+\begin{align*}
+Cov(\pmb{Y}_{i}) &= Cov(\pmb{Z}_i\pmb{b}_i + \pmb{\epsilon}_i) \\
+& = Cov(\pmb{Z}_i\pmb{b}_i)+Cov(\pmb{\epsilon}_i) \\
+& = \pmb{Z}_iCov(\pmb{b}_i)\pmb{Z}'_i+Cov(\pmb{\epsilon}_i)\\
+& = \pmb{Z}_i\pmb{G}\pmb{Z}'_i+\pmb{R}_i
+\end{align*}
+
+This means that $Cov(\pmb{Y}_i)$ will, in general, have non-zero off diagonal elements accounting for the correlation among the repeated measures for the same individual. 
+
+## Data example
+
+Cats!
+```{r, out.width='80%', fig.align='center'}
+knitr::include_graphics('laila.jpg')
+```
+
+## Data example
+
+http://users.stat.ufl.edu/~winner/data/cats_anxiety1.txt
+
+
+-  Data is from a 2007 study on cat anxiety. 
+-  Cats were given Zylkene or placebo and emotional state was measured 5 times. 
+-  Demographic info is included (although we won't be using this)
+
+## Data information
+Variables/Columns:
+
+-  ID #    7-8
+-  Weight  (kg)   12-16
+-  Age (Months)   23-24
+-  Gender         32   /* 1=Neutered Female, 2=Neutered Male, 3=Female  */
+-  Environment   40  /* 1=House, 2=Apartment  */
+-  Origin   48  /* 1=House/Apt, 2=Humane Society,3=Market,4=Barn,5=Street,6=Breeder */
+-  Treatment    56   /* 1=Zylkene, 0=Placebo  */
+-  Result       64   /* 1=Success, 0=Failure  */
+-  Emotional score @ time 1    71-72
+-  Emotional score @ time 2    79-80 
+-  Emotional score @ time 3    87-88
+-  Emotional score @ time 4    95-96
+-  Emotional score @ time 5    103-104
+
+
+
+## Read in data and clean
+Link to data (since code gets cut off):
+http://users.stat.ufl.edu/~winner/data/cats_anxiety1.dat
+
+```{r, echo = T, results = F}
+
+cats<-read.table("http://users.stat.ufl.edu/~winner/data/cats_anxiety1.dat")
+
+names(cats)<-c("id",
+               "wt",
+               "age",
+               "sex",
+               "env",
+               "org",
+               "trt",
+               "result",
+               "emscore1",
+               "emscore2",
+               "emscore3",
+               "emscore4",
+               "emscore5")
+
+summary(cats)
+```
+
+## Data descriptives
+```{r}
+summary(cats[,1:3])
+summary(cats[,4:6])
+```
+
+## Data descriptives
+```{r}
+summary(cats[,7:9])
+summary(cats[,10:13])
+```
+
+## Go from wide form to long form
+\footnotesize
+```{r, echo = T}
+
+head(cats)
+dim(cats)
+```
+
+## Go from wide form to long form
+\footnotesize
+```{r, echo = T}
+catsw <- gather(cats, time, measurement, "emscore1":"emscore5")
+dim(catsw)
+head(catsw)
+```
+
+## Go from wide form to long form
+\footnotesize
+```{r, echo = T}
+catsw$time<-as.numeric(gsub("emscore", "", catsw$time))
+
+head(catsw)
+dim(catsw)
+
+```
+
+## Plots Code
+```{r, echo=T, eval=F}
+ggplot(data = catsw, aes(x = time, y= measurement, group = id, color=as.factor(trt)))  + scale_colour_discrete(
+    name="Treatment",
+    breaks=c("0", "1"),
+    labels=c("Placebo", "Treatment")) + 
+  geom_line() + geom_point()
+
+
+chart.Correlation(cats[,9:13], histogram=TRUE, pch=19)
+
+```
+
+## Plot Anxiety Scores Over Time
+```{r, echo=F}
+ggplot(data = catsw, aes(x = time, y= measurement, group = id, color=as.factor(trt)))+ geom_line() + geom_point() +  scale_colour_discrete(name="Treatment",
+                       breaks=c("0", "1"),
+                       labels=c("Placebo", "Treatment"))
+```
+
+## Correlated data plot
+```{r, echo=F}
+chart.Correlation(cats[,9:13], histogram=TRUE, pch=19)
+```
+
+
+##  Model the data
+\footnotesize
+```{r, echo=T, eval=F}
+mod<-lmer(measurement ~ trt + time  + (1 + time | id ), data=catsw)
+summary(mod)
+```
+
+##  Model the data
+\tiny
+```{r, echo=F, tidy.opts=list(width.cutoff=70), tiddy=T}
+mod<-lmer(measurement ~ trt + time  + (1 + time | id ), data=catsw)
+summary(mod)
+```
+
+
+## Interpreting the effect estimates
+Since we have random effects, the interpretation of the fixed effect estimates are for population averages. 
+
+For a typical cat, Zylkene increases the emotional score by 1.65. 
+
+For a typical cat, the emotional score increases by 0.97 over each time period.
+
+## What is missing from this model?
+
+If we were to do more on diagnostics and more modeling, what would you want to change/examine in our model? \pause
+
+- Add interaction between time and trt
+- Model the time effect differently (categorical, nonlinear, etc)
+- Add demographics
+- Examine interactions between demographics and trt or time
+- Examine diagnostics (not covered here)
+- Test if random effects are needed
+
+## Test if random effects are needed
+```{r, echo=T, eval=F}
+
+fullMod<-lmer(measurement ~ trt + time  + (1 + time | id ), data=catsw, REML=F)
+#redMod1<-lmer(measurement ~ trt + time  + (1  | id ), data=catsw, REML=F)
+#redMod2<-lmer(measurement ~ trt + time  + (0+time | id ), data=catsw, REML=F)
+redMod3<-lm(measurement ~ trt + time, data=catsw)
+
+anova(mod, redMod3)
+
+```
+
+## Test if random effects are needed
+\footnotesize
+```{r, echo=F}
+
+fullMod<-lmer(measurement ~ trt + time  + (1 + time | id ), data=catsw, REML=F)
+redMod3<-lm(measurement ~ trt + time, data=catsw)
+
+anova(mod, redMod3)
+
+```
+
+## THANK YOU!
+
+Thank you all for being a wonderful audience! Good luck with your projects and the rest of the BDSI program!
